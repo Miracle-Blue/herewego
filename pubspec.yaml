@@ -1,0 +1,40 @@
+name: herewego
+description: A new Flutter project.
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.16.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  firebase_core: ^1.13.1
+  firebase_auth: ^3.3.9
+  firebase_database: ^9.0.8
+  firebase_storage: ^10.2.9
+  hive: ^2.0.5
+  hive_flutter: ^1.1.0
+  logger: ^1.1.0
+  image_picker: ^0.8.4+10
+  cached_network_image: ^3.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^1.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
