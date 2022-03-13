@@ -6,6 +6,7 @@ import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 import 'package:herewego/models/post_model.dart';
 import 'package:herewego/pages/check_deleting_account_page.dart';
+import 'package:herewego/pages/show_file_page.dart';
 import 'package:herewego/services/auth_service.dart';
 import 'package:herewego/services/hive_service.dart';
 import 'package:herewego/services/log_service.dart';
@@ -33,11 +34,16 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamed(context, CheckAccountPage.id);
   }
 
-  void addPost(String title, String content, String? imageUrl, String? videoUrl) async {
+  void addPost(
+      String title, String content, String? imageUrl, String? videoUrl) async {
     String id = HiveDB.loadUserId();
 
-    final post =
-        Post(userId: id, title: title, content: content, imagePath: imageUrl);
+    final post = Post(
+        userId: id,
+        title: title,
+        content: content,
+        imagePath: imageUrl,
+        videoPath: videoUrl);
 
     await RTDBService.storePost(post);
   }
@@ -47,7 +53,8 @@ class _HomePageState extends State<HomePage> {
       required Post post,
       required String title,
       required String content,
-      String? imageUrl, String? videoUrl}) async {
+      String? imageUrl,
+      String? videoUrl}) async {
     post.title = title;
     post.content = content;
     if (imageUrl != null) {
@@ -91,12 +98,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void showFilePage({required String postKey, required Post post}) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (BuildContext context, Animation<double> animation,
+                Animation<double> secondaryAnimation) =>
+            ShowFilePage(postKey: postKey, post: post),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Firebase"),
-      ),
+      appBar: appBar(),
       body: Container(
         height: MediaQuery.of(context).size.height,
         alignment: Alignment.center,
@@ -110,7 +126,6 @@ class _HomePageState extends State<HomePage> {
           },
         ),
       ),
-      drawer: drawer(context),
       floatingActionButton: FloatingActionButton(
         onPressed: () => addPostDialog(context),
         child: const Icon(Icons.add),
@@ -118,41 +133,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Drawer drawer(BuildContext context) {
-    return Drawer(
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            MaterialButton(
-              color: Colors.amber,
-              minWidth: MediaQuery.of(context).size.width,
-              height: 55,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13)),
-              onPressed: loginOut,
-              child: const Text("login Out"),
-            ),
-            const SizedBox(height: 20),
-            MaterialButton(
-              color: Colors.amber,
-              minWidth: MediaQuery.of(context).size.width,
-              height: 55,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13)),
-              onPressed: deleteAccount,
-              child: const Text("Delete Account"),
-            ),
-          ],
+  AppBar appBar() {
+    return AppBar(
+      title: const Text("Firebase App"),
+      centerTitle: true,
+      actions: [
+        PopupMenuButton(
+          icon: const Icon(Icons.exit_to_app),
+          itemBuilder: (context) {
+            return [
+              PopupMenuItem(
+                onTap: loginOut,
+                child: const Text("Log Out"),
+              ),
+              PopupMenuItem(
+                onTap: deleteAccount,
+                child: const Text("Delete Account"),
+              ),
+            ];
+          },
         ),
-      ),
+      ],
     );
   }
 
   Widget buildItem({required String postKey, required Post post}) {
+    double height = MediaQuery.of(context).size.height;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(21),
@@ -160,74 +166,94 @@ class _HomePageState extends State<HomePage> {
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       color: Colors.white,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        height: MediaQuery.of(context).size.height * 0.2,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ! Image
-                Container(
-                  height: MediaQuery.of(context).size.height * 0.09,
-                  width: MediaQuery.of(context).size.height * 0.09,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(50),
-                    color: Colors.amber,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: CachedNetworkImage(
-                      fit: BoxFit.cover,
-                      imageUrl: post.imagePath ?? "",
-                      placeholder: (context, url) => Container(
-                        color: Colors.amber,
+      child: Dismissible(
+        key: UniqueKey(),
+        onDismissed: (DismissDirection direction) => deletePost(postKey: postKey),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          height: height * 0.13,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ! Image
+                  Container(
+                    height: MediaQuery.of(context).size.height * 0.09,
+                    width: MediaQuery.of(context).size.height * 0.09,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      color: Colors.amber,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: InkWell(
+                        onTap: () =>
+                            (post.videoPath != null || post.imagePath != null)
+                                ? showFilePage(postKey: postKey, post: post)
+                                : editPostDialog(postKey: postKey, post: post),
+                        child: Hero(
+                          tag: postKey,
+                          child: (post.videoPath != null ||
+                                  post.imagePath != null)
+                              ? ((post.videoPath != null)
+                                  ? Container(
+                                      color: Colors.red,
+                                      child: const Icon(
+                                        Icons.play_arrow,
+                                        size: 40,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : CachedNetworkImage(
+                                      fit: BoxFit.cover,
+                                      imageUrl: post.imagePath ?? "",
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.amber,
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.error),
+                                    ))
+                              : Container(
+                                  color: Colors.red,
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
                       ),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      post.title ?? "",
-                      style: const TextStyle(fontSize: 22),
+                  const SizedBox(width: 10),
+                  InkWell(
+                    onTap: () => editPostDialog(postKey: postKey, post: post),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        Text(
+                          post.title ?? "",
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          post.date ?? "",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          post.content ?? "",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      post.content ?? "",
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: () =>
-                        editPostDialog(postKey: postKey, post: post),
-                    icon: const Icon(Icons.edit),
-                    label: const Text("Edit"),
                   ),
-                ),
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: () => deletePost(postKey: postKey),
-                    icon: const Icon(Icons.delete),
-                    label: const Text("Delete"),
-                  ),
-                ),
-              ],
-            )
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -6,47 +6,54 @@ import 'package:herewego/services/log_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 class StoreService {
-  static final _storage = FirebaseStorage.instance.ref();
-  static const folder = "image_folder";
+  static final DateTime now = DateTime.now();
+  static final String storageId =
+      "${now.millisecondsSinceEpoch.toString()}${HiveDB.loadUserId()}";
+  static final String today = ('${now.month.toString()}-${now.day.toString()}');
 
-  static Future<String?> getImageUrl(File _imagePath) async {
-    String? _downloadUrl;
-    String imageName = "image_${DateTime.now().toIso8601String()}";
-    await _storage.child(folder).child(imageName).putFile(_imagePath).then((p0) async {
-      if (p0.metadata != null) {
-        _downloadUrl = await p0.ref.getDownloadURL();
-      } else {
-        return null;
-      }
-    });
-    return _downloadUrl;
+  static final _storage = FirebaseStorage.instance.ref();
+  static const folderImage = "image";
+  static const folderVideo = "video";
+
+  static Future<String?> getImageUrl(ImageSource source) async {
+    try {
+      final file = await ImagePicker().pickImage(source: source);
+
+      Reference ref = _storage.child(folderImage).child(today).child(storageId);
+      UploadTask uploadTask =
+          ref.putFile(File(file!.path), SettableMetadata(contentType: 'image'));
+
+      String? downloadUrl;
+      await uploadTask.then((p0) async {
+        downloadUrl = await p0.ref.getDownloadURL();
+      });
+      Log.d(downloadUrl!);
+
+      return downloadUrl;
+    } catch (e) {
+      Log.d(e.toString());
+      return null;
+    }
   }
 
-  static Future<String?> uploadToStorage() async {
+  static Future<String?> uploadToStorage(ImageSource source) async {
     try {
-      final DateTime now = DateTime.now();
-      final int millSeconds = now.millisecondsSinceEpoch;
-      final String month = now.month.toString();
-      final String date = now.day.toString();
-      final String storageId = (millSeconds.toString() + HiveDB.loadUserId());
-      final String today = ('$month-$date');
+      final file = await ImagePicker().pickVideo(source: source);
 
-      final file =  await ImagePicker().pickVideo(source: ImageSource.gallery);
+      Reference ref = _storage.child(folderVideo).child(today).child(storageId);
+      UploadTask uploadTask = ref.putFile(
+          File(file!.path), SettableMetadata(contentType: 'video/mp4'));
 
-      Reference ref = FirebaseStorage.instance.ref().child("video").child(today).child(storageId);
-      UploadTask uploadTask = ref.putFile(File(file!.path), SettableMetadata(contentType: 'video/mp4'));
+      String? downloadUrl;
+      await uploadTask.then((p0) async {
+        downloadUrl = await p0.ref.getDownloadURL();
+      });
+      Log.d(downloadUrl!);
 
-    String? downloadUrl;
-    await uploadTask.then((p0) async {
-      downloadUrl = await p0.ref.getDownloadURL();
-    });
-    Log.d(downloadUrl!);
-    return downloadUrl;
-
+      return downloadUrl;
     } catch (error) {
-    Log.d(error.toString());
-    return null;
+      Log.d(error.toString());
+      return null;
     }
-
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'pages/check_deleting_account_page.dart';
-import 'pages/detail_page.dart';
 import 'pages/home_page.dart';
 import 'pages/sign_in_page.dart';
 import 'pages/sign_up_page.dart';
@@ -29,14 +28,13 @@ class MyApp extends StatelessWidget {
       title: 'Firebase Note App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.amber,
+        primarySwatch: Colors.red,
       ),
       home: (HiveDB.loadUserId().isNotEmpty) ? const HomePage() : const SignInPage(),
       routes: {
         HomePage.id: (context) => const HomePage(),
         SignInPage.id: (context) => const SignInPage(),
         SignUpPage.id: (context) => const SignUpPage(),
-        DetailPage.id: (context) => const DetailPage(),
         CheckAccountPage.id: (context) => const CheckAccountPage(),
       },
     );

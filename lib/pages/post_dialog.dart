@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:herewego/models/post_model.dart';
 import 'package:herewego/services/log_service.dart';
 import 'package:herewego/services/store_service.dart';
@@ -11,7 +9,8 @@ import 'package:image_picker/image_picker.dart';
 
 class PostDialog extends StatefulWidget {
   final Post? post;
-  final Function(String title, String content, String? imageUrl, String? videoUrl) onDone;
+  final Function(
+      String title, String content, String? imageUrl, String? videoUrl) onDone;
 
   const PostDialog({Key? key, this.post, required this.onDone})
       : super(key: key);
@@ -25,46 +24,28 @@ class _PostDialogState extends State<PostDialog> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
 
-  File? _image;
-  String? _video;
-  String? imageUrl;
+  String? _videoUrl;
+  String? _imageUrl;
   bool isUploading = false;
   late final bool isEditing;
 
   void pickImage(ImageSource source) async {
-    try {
-      ImagePicker().pickImage(source: source).then((value) async {
-        if (value != null) {
-          Log.d(value.path);
-
-          setState(() {
-            _image = File(value.path);
-            isUploading = true;
-          });
-
-          if (_image != null) {
-            await StoreService.getImageUrl(_image!).then((value) {
-              if (value != null) {
-                imageUrl = value;
-              }
-            });
-
-            if (mounted) {
-              setState(() {
-                isUploading = false;
-              });
-            }
-          }
-        }
-      });
-    } on PlatformException catch (e) {
-      Log.e("Failed to pick image $e");
-    }
+    setState(() {
+      isUploading = true;
+    });
+    _imageUrl = await StoreService.getImageUrl(source);
+    setState(() {
+      isUploading = false;
+    });
   }
 
-  void pickVideo()  async {
-    await StoreService.uploadToStorage().then((value) {
-      _video = value;
+  void pickVideo(ImageSource source) async {
+    setState(() {
+      isUploading = true;
+    });
+    _videoUrl = await StoreService.uploadToStorage(source);
+    setState(() {
+      isUploading = false;
     });
   }
 
@@ -75,10 +56,10 @@ class _PostDialogState extends State<PostDialog> {
       final title = _titleController.text;
       final content = _contentController.text;
 
-      Log.d(imageUrl.toString());
-      Log.d(_video.toString());
+      Log.d(_imageUrl.toString());
+      Log.d(_videoUrl.toString());
 
-      widget.onDone(title, content, imageUrl, _video);
+      widget.onDone(title, content, _imageUrl, _videoUrl);
       Navigator.pop(context);
     }
   }
@@ -131,11 +112,22 @@ class _PostDialogState extends State<PostDialog> {
               child: Column(
                 children: [
                   const SizedBox(height: 8),
-                  chooseImageField(),
+                  isUploading ? const Center(child: CircularProgressIndicator.adaptive(),) : chooseImageField(),
                   const SizedBox(height: 8),
-                  titleField(),
+                  textField(
+                    controller: _titleController,
+                    hintText: 'Enter Title',
+                    validator: (name) =>
+                        name != null && name.isEmpty ? 'Enter Title' : null,
+                  ),
                   const SizedBox(height: 8),
-                  contentField(),
+                  textField(
+                    controller: _contentController,
+                    hintText: 'Enter Content',
+                    validator: (country) => (country != null && country.isEmpty)
+                        ? 'Enter Content'
+                        : null,
+                  )
                 ],
               ),
             ),
@@ -152,7 +144,7 @@ class _PostDialogState extends State<PostDialog> {
   Widget chooseImageField() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: _image != null || _video != null
+      children: (_imageUrl != null || _videoUrl != null)
           ? [
               Row(
                 children: [
@@ -171,10 +163,10 @@ class _PostDialogState extends State<PostDialog> {
                           child: SizedBox(
                             height: 60,
                             width: 60,
-                            child: Image.file(
-                              _image!,
+                            child: (_imageUrl != null) ? Image.network(
+                              _imageUrl!,
                               fit: BoxFit.cover,
-                            ),
+                            ) : const Icon(Icons.play_arrow),
                           ),
                         ),
                         isUploading
@@ -189,8 +181,8 @@ class _PostDialogState extends State<PostDialog> {
                     splashRadius: 16,
                     onPressed: () {
                       setState(() {
-                        _image = null;
-                        _video = null;
+                        _imageUrl = null;
+                        _videoUrl = null;
                       });
                     },
                     icon: const Icon(CupertinoIcons.clear_circled),
@@ -199,98 +191,102 @@ class _PostDialogState extends State<PostDialog> {
               )
             ]
           : [
-              imageField(
-                  source: ImageSource.camera,
-                  image: "assets/icons/ic_camera.png"),
-              imageField(
-                  source: ImageSource.gallery,
-                  image: "assets/icons/ic_image.png"),
-              Container(
-                height: 60,
-                width: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: Colors.grey.shade600,
-                    width: 1.5,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: InkWell(
-                    onTap: () => pickVideo(),
-                    child: const SizedBox(
-                      height: 60,
-                      width: 60,
-                      child: Icon(Icons.play_arrow),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+        pickWidget(
+          pick: imagePickWidget(
+            source: ImageSource.camera,
+            image: "assets/icons/ic_camera.png",
+          ),
+        ),
+        pickWidget(
+          pick: imagePickWidget(
+            source: ImageSource.gallery,
+            image: "assets/icons/ic_image.png",
+          ),
+        ),
+        pickWidget(pick: videoPickWidget()),
+      ],
     );
   }
 
-  Container imageField({required ImageSource source, required String image}) {
+  List<Widget> pickImageWidgets() => [
+        pickWidget(
+          pick: imagePickWidget(
+            source: ImageSource.camera,
+            image: "assets/icons/ic_camera.png",
+          ),
+        ),
+        pickWidget(
+          pick: imagePickWidget(
+            source: ImageSource.gallery,
+            image: "assets/icons/ic_image.png",
+          ),
+        ),
+        pickWidget(pick: videoPickWidget()),
+      ];
+
+  Container pickWidget({required Widget pick}) {
     return Container(
       height: 60,
       width: 60,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.grey.shade600, width: 1.5)),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: Colors.grey.shade600,
+          width: 1.5,
+        ),
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        child: InkWell(
-          onTap: () => pickImage(source),
-          child: SizedBox(
-            height: 60,
-            width: 60,
-            child: Image.asset(
-              image,
-              fit: BoxFit.cover,
-            ),
-          ),
+        child: pick,
+      ),
+    );
+  }
+
+  InkWell videoPickWidget() {
+    return InkWell(
+      onTap: () => pickVideo(ImageSource.gallery),
+      child: const SizedBox(
+        height: 60,
+        width: 60,
+        child: Icon(Icons.play_arrow),
+      ),
+    );
+  }
+
+  InkWell imagePickWidget(
+      {required ImageSource source, required String image}) {
+    return InkWell(
+      onTap: () => pickImage(source),
+      child: SizedBox(
+        height: 60,
+        width: 60,
+        child: Image.asset(
+          image,
+          fit: BoxFit.cover,
         ),
       ),
     );
   }
 
-  TextFormField titleField() {
+  Widget textField(
+      {required TextEditingController controller,
+      required String hintText,
+      required String? Function(String?)? validator}) {
     return TextFormField(
-      controller: _titleController,
-      decoration: const InputDecoration(
-        focusedBorder: OutlineInputBorder(
+      controller: controller,
+      decoration: InputDecoration(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(21)),
           borderSide: BorderSide(
             color: Colors.black,
           ),
         ),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(21)),
         ),
-        hintText: 'Enter Title',
+        hintText: hintText,
       ),
-      validator: (name) => name != null && name.isEmpty ? 'Enter Title' : null,
-    );
-  }
-
-  TextFormField contentField() {
-    return TextFormField(
-      controller: _contentController,
-      decoration: const InputDecoration(
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(21)),
-          borderSide: BorderSide(
-            color: Colors.black,
-          ),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(21)),
-        ),
-        hintText: 'Enter Content',
-      ),
-      validator: (country) =>
-          country != null && country.isEmpty ? 'Enter Content' : null,
+      validator: validator,
     );
   }
 

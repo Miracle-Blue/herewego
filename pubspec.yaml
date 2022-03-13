@@ -11,15 +11,21 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.2
+
   firebase_core: ^1.13.1
   firebase_auth: ^3.3.9
   firebase_database: ^9.0.8
   firebase_storage: ^10.2.9
+
   hive: ^2.0.5
   hive_flutter: ^1.1.0
+
   logger: ^1.1.0
   image_picker: ^0.8.4+10
   cached_network_image: ^3.2.0
+  video_player: ^2.3.0
+
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:

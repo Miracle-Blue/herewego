@@ -80,18 +80,19 @@ class _SignInPageState extends State<SignInPage> {
                           controller: _passwordController),
                       const SizedBox(height: 20),
                       MaterialButton(
-                        color: Colors.amber,
+                        color: Colors.red,
                         minWidth: MediaQuery.of(context).size.width,
                         height: 55,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(13)),
                         onPressed: doSignIn,
-                        child: const Text("Sign In"),
+                        child: const Text("Sign In", style: TextStyle(color: Colors.white),),
                       ),
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          const Text("Don't have an account?  "),
                           InkWell(
                             onTap: () {
                               Navigator.pushReplacementNamed(
