@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:herewego/pages/sign_in_page.dart';
 import 'package:herewego/services/log_service.dart';
+import 'package:herewego/ui/pages/sign_in_page.dart';
 
 import 'hive_service.dart';
 
@@ -9,23 +9,30 @@ class AuthService {
   static const isTester = true;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  static Future<User?> signUpUser(String name, String email, String password) async {
+  static Future<User?> signUpUser(
+    String name,
+    String email,
+    String password,
+  ) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       User? user = userCredential.user;
       await user!.updateDisplayName(name);
-      Log.d(user.toString());
+      user.toString().d;
 
       return user;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        Log.d('The password provided is too weak.');
+        'The password provided is too weak.'.e;
       } else if (e.code == 'email-already-in-use') {
-        Log.d("The account already exists for that email.");
+        "The account already exists for that email.".e;
       }
     } catch (e) {
-      Log.d(e.toString());
+      e.toString().e;
     }
 
     return null;
@@ -33,19 +40,20 @@ class AuthService {
 
   static Future<User?> signInUser(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
       User? user = userCredential.user;
-      Log.d(user.toString());
+      user.toString().d;
 
       return user;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        Log.d('No user found for email.');
+        'No user found for email.'.e;
       } else if (e.code == 'wrong-password') {
-        Log.d("Wrong password provided for that user.");
+        "Wrong password provided for that user.".e;
       }
     } catch (e) {
-      Log.d(e.toString());
+      e.toString().e;
     }
 
     return null;
@@ -57,12 +65,14 @@ class AuthService {
     Navigator.pushNamedAndRemoveUntil(context, SignInPage.id, (route) => false);
   }
 
-  static Future<void> deleteUser(BuildContext context, String email, String password) async {
-    await _auth.signInWithEmailAndPassword(email: email, password: password).then((value) async {
-      await value.user!.delete().then((value) {
-        HiveDB.removeUserId();
-        Navigator.pushNamedAndRemoveUntil(context, SignInPage.id, (route) => false);
-      });
+  static Future<void> deleteUser(BuildContext context) async {
+    await _auth.currentUser!.delete().then((value) {
+      HiveDB.removeUserId();
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        SignInPage.id,
+        (route) => false,
+      );
     });
   }
 }

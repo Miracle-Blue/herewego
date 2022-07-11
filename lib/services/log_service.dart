@@ -1,22 +1,28 @@
 import 'package:logger/logger.dart';
 import 'auth_service.dart';
 
-class Log {
-  static final Logger _logger = Logger(printer: PrettyPrinter());
-
-  static void d(String message) {
-    if (AuthService.isTester) _logger.d(message);
+extension Logging on Object {
+  void d() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).d(this);
   }
 
-  static void i(String message) {
-    if (AuthService.isTester) _logger.i(message);
+  void i() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).i(this);
   }
 
-  static void w(String message) {
-    if (AuthService.isTester) _logger.w(message);
+  void e() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).e(this);
   }
 
-  static void e(String message) {
-    if (AuthService.isTester) _logger.e(message);
+  void w() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).w(this);
+  }
+
+  void wtf() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).wtf(this);
+  }
+
+  void v() {
+    if (AuthService.isTester) Logger(printer: PrettyPrinter()).v(this);
   }
 }

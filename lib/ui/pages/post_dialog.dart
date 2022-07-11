@@ -10,10 +10,17 @@ import 'package:image_picker/image_picker.dart';
 class PostDialog extends StatefulWidget {
   final Post? post;
   final Function(
-      String title, String content, String? imageUrl, String? videoUrl) onDone;
+    String title,
+    String content,
+    String? imageUrl,
+    String? videoUrl,
+  ) onDone;
 
-  const PostDialog({Key? key, this.post, required this.onDone})
-      : super(key: key);
+  const PostDialog({
+    Key? key,
+    this.post,
+    required this.onDone,
+  }) : super(key: key);
 
   @override
   State<PostDialog> createState() => _PostDialogState();
@@ -29,24 +36,23 @@ class _PostDialogState extends State<PostDialog> {
   bool isUploading = false;
   late final bool isEditing;
 
+  void load(bool value) {
+    isUploading = value;
+    setState(() {});
+  }
+
   void pickImage(ImageSource source) async {
-    setState(() {
-      isUploading = true;
-    });
+    load(true);
     _imageUrl = await StoreService.getImageUrl(source);
-    setState(() {
-      isUploading = false;
-    });
+    _videoUrl = '';
+    load(false);
   }
 
   void pickVideo(ImageSource source) async {
-    setState(() {
-      isUploading = true;
-    });
+    load(true);
     _videoUrl = await StoreService.uploadToStorage(source);
-    setState(() {
-      isUploading = false;
-    });
+    _imageUrl = '';
+    load(false);
   }
 
   void addFunction() {
@@ -56,8 +62,8 @@ class _PostDialogState extends State<PostDialog> {
       final title = _titleController.text;
       final content = _contentController.text;
 
-      Log.d(_imageUrl.toString());
-      Log.d(_videoUrl.toString());
+      _imageUrl.toString().d;
+      _videoUrl.toString().d;
 
       widget.onDone(title, content, _imageUrl, _videoUrl);
       Navigator.pop(context);
@@ -112,7 +118,11 @@ class _PostDialogState extends State<PostDialog> {
               child: Column(
                 children: [
                   const SizedBox(height: 8),
-                  isUploading ? const Center(child: CircularProgressIndicator.adaptive(),) : chooseImageField(),
+                  isUploading
+                      ? const Center(
+                          child: CircularProgressIndicator.adaptive(),
+                        )
+                      : chooseImageField(),
                   const SizedBox(height: 8),
                   textField(
                     controller: _titleController,
@@ -163,10 +173,12 @@ class _PostDialogState extends State<PostDialog> {
                           child: SizedBox(
                             height: 60,
                             width: 60,
-                            child: (_imageUrl != null) ? Image.network(
-                              _imageUrl!,
-                              fit: BoxFit.cover,
-                            ) : const Icon(Icons.play_arrow),
+                            child: (_imageUrl != null)
+                                ? Image.network(
+                                    _imageUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const Icon(Icons.play_arrow),
                           ),
                         ),
                         isUploading
@@ -191,20 +203,20 @@ class _PostDialogState extends State<PostDialog> {
               )
             ]
           : [
-        pickWidget(
-          pick: imagePickWidget(
-            source: ImageSource.camera,
-            image: "assets/icons/ic_camera.png",
-          ),
-        ),
-        pickWidget(
-          pick: imagePickWidget(
-            source: ImageSource.gallery,
-            image: "assets/icons/ic_image.png",
-          ),
-        ),
-        pickWidget(pick: videoPickWidget()),
-      ],
+              pickWidget(
+                pick: imagePickWidget(
+                  source: ImageSource.camera,
+                  image: "assets/icons/ic_camera.png",
+                ),
+              ),
+              pickWidget(
+                pick: imagePickWidget(
+                  source: ImageSource.gallery,
+                  image: "assets/icons/ic_image.png",
+                ),
+              ),
+              pickWidget(pick: videoPickWidget()),
+            ],
     );
   }
 
@@ -253,8 +265,10 @@ class _PostDialogState extends State<PostDialog> {
     );
   }
 
-  InkWell imagePickWidget(
-      {required ImageSource source, required String image}) {
+  InkWell imagePickWidget({
+    required ImageSource source,
+    required String image,
+  }) {
     return InkWell(
       onTap: () => pickImage(source),
       child: SizedBox(
@@ -268,12 +282,15 @@ class _PostDialogState extends State<PostDialog> {
     );
   }
 
-  Widget textField(
-      {required TextEditingController controller,
-      required String hintText,
-      required String? Function(String?)? validator}) {
+  Widget textField({
+    required TextEditingController controller,
+    required String hintText,
+    required String? Function(String?)? validator,
+  }) {
     return TextFormField(
+      maxLines: null,
       controller: controller,
+      textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(21)),
