@@ -72,33 +72,30 @@ class _ShowFilePageState extends State<ShowFilePage> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       body: Center(
-        child: Hero(
-          tag: widget.postKey,
-          child: widget.post.videoPath.isNotEmpty
-              ? Stack(
-                  children: [
-                    Center(
-                      child: AspectRatio(
-                        aspectRatio: controller.value.aspectRatio,
-                        child: VideoPlayer(controller),
-                      ),
+        child: widget.post.videoPath.isNotEmpty
+            ? Stack(
+                children: [
+                  Center(
+                    child: AspectRatio(
+                      aspectRatio: controller.value.aspectRatio,
+                      child: VideoPlayer(controller),
                     ),
-                    SizedBox(
-                      height: size.height,
-                      width: size.width,
-                      child: const PlayPauseReplayButtons(),
-                    ),
-                  ],
-                )
-              : CachedNetworkImage(
-                  fit: BoxFit.cover,
-                  imageUrl: widget.post.imagePath,
-                  placeholder: (context, url) => const ColoredBox(
-                    color: Colors.amber,
                   ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                  SizedBox(
+                    height: size.height,
+                    width: size.width,
+                    child: const PlayPauseReplayButtons(),
+                  ),
+                ],
+              )
+            : CachedNetworkImage(
+                fit: BoxFit.cover,
+                imageUrl: widget.post.imagePath,
+                placeholder: (context, url) => const ColoredBox(
+                  color: Colors.amber,
                 ),
-        ),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              ),
       ),
     );
   }

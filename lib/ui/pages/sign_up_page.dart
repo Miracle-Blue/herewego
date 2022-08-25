@@ -13,13 +13,6 @@ class SignUpProvider extends ChangeNotifier {
 
   bool isLoading = false;
 
-  int count = 0;
-
-  void inc() {
-    count++;
-    notifyListeners();
-  }
-
   void doSignUp(BuildContext context) async {
     String firstName = _firstNameController.text.trim();
     String lastName = _lastNameController.text.trim();
@@ -90,14 +83,6 @@ class _View extends StatelessWidget {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(provider.count.toString()),
-                      ElevatedButton(
-                        onPressed: () {
-                          // provider.inc();
-                          context.read<SignUpProvider>()?.inc();
-                        },
-                        child: const Text('tap'),
-                      ),
                       _CustomTextField(
                         text: "First Name",
                         controller: provider._firstNameController,

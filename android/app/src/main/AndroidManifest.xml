@@ -2,7 +2,7 @@
     package="com.example.herewego">
     <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="herewego"
+        android:label="Fire Note"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

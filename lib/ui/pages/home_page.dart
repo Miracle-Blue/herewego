@@ -259,10 +259,7 @@ class BuildItemCard extends StatelessWidget {
                 ),
                 child: InkWell(
                   onTap: () => cardTapped(context),
-                  child: Hero(
-                    tag: postKey,
-                    child: widgets(),
-                  ),
+                  child: widgets(),
                 ),
               ),
               const SizedBox(width: 10),
