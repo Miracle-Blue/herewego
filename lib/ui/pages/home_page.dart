@@ -32,7 +32,8 @@ class HomePage extends StatelessWidget {
       userId: id,
       title: title,
       content: content,
-      date: DateFormat("yyyy-mm-dd").format(DateTime.now()),
+      date: DateFormat('hh:mm aaa,' ' EEE, MMM d, ' 'yyyy')
+          .format(DateTime.now()),
       imagePath: imageUrl ?? '',
       videoPath: videoUrl ?? '',
     );
@@ -193,7 +194,8 @@ class BuildItemCard extends StatelessWidget {
   }) async {
     post.title = title;
     post.content = content;
-    post.date = DateFormat("dd-mmmm-yyyy").format(DateTime.now());
+    post.date =
+        DateFormat('hh:mm aaa,' ' EEE, MMM d, ' 'yyyy').format(DateTime.now());
     if (imageUrl != null) {
       post.imagePath = imageUrl;
     }
