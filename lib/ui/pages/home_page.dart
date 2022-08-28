@@ -44,7 +44,7 @@ class HomePage extends StatelessWidget {
   Future<dynamic> addPostDialog(BuildContext context) {
     return showDialog(
       context: context,
-      builder: (context) => PostDialog(
+      builder: (context) => PostDialog.init(
         onDone: addPost,
       ),
     );
@@ -170,7 +170,7 @@ class BuildItemCard extends StatelessWidget {
     return showDialog(
       barrierColor: Colors.transparent,
       context: context,
-      builder: (context) => PostDialog(
+      builder: (context) => PostDialog.init(
         post: post,
         onDone: (title, content, imageUrl, videoUrl) => editPost(
           post: post,

@@ -1,10 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:herewego/models/post_model.dart';
-import 'package:herewego/services/log_service.dart';
+import 'package:herewego/ui/provider.dart';
+import 'package:herewego/ui/providers/show_file_provider.dart';
 import 'package:video_player/video_player.dart';
 
-class ShowFilePage extends StatefulWidget {
+class ShowFilePage extends StatelessWidget {
   final String postKey;
   final Post post;
 
@@ -15,60 +16,61 @@ class ShowFilePage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ShowFilePageState createState() => _ShowFilePageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      model: ShowFileVM(),
+      child: _View(
+        post: post,
+        postKey: postKey,
+      ),
+    );
+  }
 }
 
-class _ShowFilePageState extends State<ShowFilePage> {
-  late VideoPlayerController controller;
+class _View extends StatefulWidget {
+  final String postKey;
+  final Post post;
+
+  const _View({
+    Key? key,
+    required this.postKey,
+    required this.post,
+  }) : super(key: key);
+
+  @override
+  State<_View> createState() => _ViewState();
+}
+
+class _ViewState extends State<_View> {
   bool finishedPlaying = false;
-
-  void initVideo() {
-    if (widget.post.videoPath.isNotEmpty) {
-      controller = VideoPlayerController.network(widget.post.videoPath)
-        ..initialize().then((value) {
-          setState(() {});
-        });
-    } else {
-      try {
-        controller = VideoPlayerController.network("");
-      } catch (e, s) {
-        s.toString().e;
-      }
-    }
-
-    controller.addListener(() {
-      if (controller.value.duration == controller.value.position) {
-        finishedPlaying = true;
-      } else {
-        finishedPlaying = false;
-      }
-      setState(() {});
-    });
-  }
-
-  void pressedPlayOrPause() {
-    if (finishedPlaying) {
-      controller.play(); // Replay the video
-    } else {
-      !controller.value.isPlaying ? controller.play() : controller.pause();
-    }
-    setState(() {});
-  }
 
   @override
   void initState() {
     super.initState();
-    initVideo();
+    context.read<ShowFileVM>()!.initVideo(
+          finishedPlaying: finishedPlaying,
+          post: widget.post,
+        );
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context.read<ShowFileVM>()!.controller.dispose();
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    Future.microtask(() {
+
+    });
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final model = context.watch<ShowFileVM>()!;
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       body: Center(
@@ -77,8 +79,8 @@ class _ShowFilePageState extends State<ShowFilePage> {
                 children: [
                   Center(
                     child: AspectRatio(
-                      aspectRatio: controller.value.aspectRatio,
-                      child: VideoPlayer(controller),
+                      aspectRatio: model.controller.value.aspectRatio,
+                      child: VideoPlayer(model.controller),
                     ),
                   ),
                   SizedBox(
@@ -107,19 +109,23 @@ class PlayPauseReplayButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final state = context.findAncestorStateOfType<_ShowFilePageState>()!;
+    final model = context.watch<ShowFileVM>()!;
+    final state = context.findAncestorStateOfType<_ViewState>()!;
     return Padding(
       padding: EdgeInsets.only(top: size.height * 0.8),
       child: Center(
         child: GestureDetector(
-          onTap: state.pressedPlayOrPause,
+          onTap: () => model.pressedPlayOrPause(
+            controller: model.controller,
+            finishedPlaying: state.finishedPlaying,
+          ),
           child: state.finishedPlaying
               ? const Icon(
                   Icons.replay,
                   color: Colors.red,
                   size: 40.0,
                 )
-              : (state.controller.value.isPlaying
+              : (model.controller.value.isPlaying
                   ? const Icon(
                       Icons.pause,
                       color: Colors.red,

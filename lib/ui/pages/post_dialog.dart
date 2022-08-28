@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:herewego/models/post_model.dart';
-import 'package:herewego/services/log_service.dart';
-import 'package:herewego/services/store_service.dart';
+import 'package:herewego/ui/provider.dart';
+import 'package:herewego/ui/providers/post_provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PostDialog extends StatefulWidget {
@@ -22,6 +22,24 @@ class PostDialog extends StatefulWidget {
     required this.onDone,
   }) : super(key: key);
 
+  static Widget init(
+      {Post? post,
+      required Function(
+        String title,
+        String content,
+        String? imageUrl,
+        String? videoUrl,
+      )
+          onDone}) {
+    return ChangeNotifierProvider(
+      model: PostVM(post, onDone),
+      child: PostDialog(
+        post: post,
+        onDone: onDone,
+      ),
+    );
+  }
+
   @override
   State<PostDialog> createState() => _PostDialogState();
 }
@@ -30,48 +48,16 @@ class _PostDialogState extends State<PostDialog> {
   final formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  late PostVM model;
 
-  String? _videoUrl;
-  String? _imageUrl;
-  bool isUploading = false;
-  late final bool isEditing;
-
-  void load(bool value) {
-    isUploading = value;
-    setState(() {});
-  }
-
-  void pickImage(ImageSource source) async {
-    load(true);
-    _imageUrl = await StoreService.getImageUrl(source);
-    _videoUrl = '';
-    load(false);
-  }
-
-  void pickVideo(ImageSource source) async {
-    load(true);
-    _videoUrl = await StoreService.uploadToStorage(source);
-    _imageUrl = '';
-    load(false);
-  }
-
-  void addFunction() {
-    final isValid = formKey.currentState!.validate();
-
-    if (isValid) {
-      final title = _titleController.text;
-      final content = _contentController.text;
-
-      _imageUrl.toString().d;
-      _videoUrl.toString().d;
-
-      widget.onDone(title, content, _imageUrl, _videoUrl);
-      Navigator.pop(context);
-    }
-  }
-
-  void cancelFunction() {
-    Navigator.pop(context);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    model = context.read<PostVM>()!
+      ..init(
+        _titleController,
+        _contentController,
+      );
   }
 
   @override
@@ -82,21 +68,8 @@ class _PostDialogState extends State<PostDialog> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    isEditing = widget.post != null;
-
-    if (widget.post != null) {
-      final post = widget.post!;
-
-      _titleController.text = post.title!;
-      _contentController.text = post.content!;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    context.watch<PostVM>();
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(
@@ -111,14 +84,16 @@ class _PostDialogState extends State<PostDialog> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: isEditing ? const Text("Edit Post") : const Text("Add Post"),
+          title: (model.isEditing != null && model.isEditing!)
+              ? const Text("Edit Post")
+              : const Text("Add Post"),
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
               child: Column(
                 children: [
                   const SizedBox(height: 8),
-                  isUploading
+                  model.isUploading
                       ? const Center(
                           child: CircularProgressIndicator.adaptive(),
                         )
@@ -144,7 +119,7 @@ class _PostDialogState extends State<PostDialog> {
           ),
           actions: [
             cancelButton(context),
-            addSaveButton(context, isEditing),
+            addSaveButton(context, model.isEditing),
           ],
         ),
       ),
@@ -154,7 +129,7 @@ class _PostDialogState extends State<PostDialog> {
   Widget chooseImageField() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: (_imageUrl != null || _videoUrl != null)
+      children: (model.imageUrl != null || model.videoUrl != null)
           ? [
               Row(
                 children: [
@@ -173,15 +148,15 @@ class _PostDialogState extends State<PostDialog> {
                           child: SizedBox(
                             height: 60,
                             width: 60,
-                            child: (_imageUrl != null)
+                            child: (model.imageUrl != null)
                                 ? Image.network(
-                                    _imageUrl!,
+                                    model.imageUrl!,
                                     fit: BoxFit.cover,
                                   )
                                 : const Icon(Icons.play_arrow),
                           ),
                         ),
-                        isUploading
+                        model.isUploading
                             ? const Center(
                                 child: CircularProgressIndicator.adaptive(),
                               )
@@ -191,12 +166,7 @@ class _PostDialogState extends State<PostDialog> {
                   ),
                   IconButton(
                     splashRadius: 16,
-                    onPressed: () {
-                      setState(() {
-                        _imageUrl = null;
-                        _videoUrl = null;
-                      });
-                    },
+                    onPressed: () => model.clearMedia(),
                     icon: const Icon(CupertinoIcons.clear_circled),
                   ),
                 ],
@@ -256,7 +226,7 @@ class _PostDialogState extends State<PostDialog> {
 
   InkWell videoPickWidget() {
     return InkWell(
-      onTap: () => pickVideo(ImageSource.gallery),
+      onTap: () => model.pickVideo(ImageSource.gallery),
       child: const SizedBox(
         height: 60,
         width: 60,
@@ -270,7 +240,7 @@ class _PostDialogState extends State<PostDialog> {
     required String image,
   }) {
     return InkWell(
-      onTap: () => pickImage(source),
+      onTap: () => model.pickImage(source),
       child: SizedBox(
         height: 60,
         width: 60,
@@ -309,15 +279,22 @@ class _PostDialogState extends State<PostDialog> {
 
   TextButton cancelButton(BuildContext context) {
     return TextButton(
-      onPressed: cancelFunction,
+      onPressed: () => model.cancelFunction(context),
       child: const Text("Cancel"),
     );
   }
 
-  TextButton addSaveButton(BuildContext context, bool isEditing) {
+  TextButton addSaveButton(BuildContext context, bool? isEditing) {
     return TextButton(
-      onPressed: addFunction,
-      child: isEditing ? const Text("Save") : const Text("Add"),
+      onPressed: () => model.addFunction(
+        context,
+        formKey,
+        _titleController,
+        _contentController,
+      ),
+      child: (isEditing != null && isEditing)
+          ? const Text("Save")
+          : const Text("Add"),
     );
   }
 }
