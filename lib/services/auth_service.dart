@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:herewego/services/log_service.dart';
 import 'package:herewego/ui/pages/sign_in_page.dart';
+import 'package:herewego/ui/pages/sign_up_page.dart';
 
 import 'hive_service.dart';
 
@@ -76,6 +77,6 @@ class AuthService {
         (route) => false,
       );
     });
-    Navigator.pushNamedAndRemoveUntil(context, SignInPage.id, (route) => false);
+    Navigator.pushNamedAndRemoveUntil(context, SignUpPage.id, (route) => false);
   }
 }
