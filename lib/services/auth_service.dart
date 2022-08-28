@@ -66,6 +66,8 @@ class AuthService {
   }
 
   static Future<void> deleteUser(BuildContext context) async {
+    Navigator.pop(context);
+
     await _auth.currentUser!.delete().then((value) {
       HiveDB.removeUserId();
       Navigator.pushNamedAndRemoveUntil(
@@ -74,5 +76,6 @@ class AuthService {
         (route) => false,
       );
     });
+    Navigator.pushNamedAndRemoveUntil(context, SignInPage.id, (route) => false);
   }
 }
